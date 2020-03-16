@@ -11,3 +11,8 @@ This project compares the speed differences when audio raw datas compressed betw
 - The sound is transmitted through a microphone connected to the FPGA.
 - Audio data is processed by the HPS and the FPGA, respectively, through the DMA 
 - Compressed audio data is stored again as a SDRAM of the FPGA.
+## Result
+---
+![Alt text](img/result_data.png)
+![Alt text](img/result.png)
+### The Hardware (FPGA) indicates faster processing speed.
