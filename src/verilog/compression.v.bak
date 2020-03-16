@@ -1,0 +1,10 @@
+module Compression(
+	input clk;
+	input rst;
+	input in;
+	output out;
+	output enable;
+);
+
+
+endmodule
