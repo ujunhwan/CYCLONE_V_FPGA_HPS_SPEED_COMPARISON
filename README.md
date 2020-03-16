@@ -1,2 +1,2 @@
 # FPGA_HPS_SPEED_COMPARISON
-Using Intel Cyclone V, we measured speed between FPGA and HPS
+We created a project using DMA to compare the speed differences between FPGAs and HPS.
