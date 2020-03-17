@@ -3,32 +3,30 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <time.h>
-/*Prototypes for functions used to access physical memory addresses*/
+
+#define BUF_SIZE 80000 
+#define BUF_THRESHOLD 96
+#define LW_BRIDGE_SPAN 0x00005000
+#define LW_BRIDGE_BASE 0xFF200000
+#define SDRAM_SPAN 0x03FFFFFFF
+#define DMA_M2S 0x00003080
+#define DMA_S2M	0x00003060
+
 int open_physical(int);
 void* map_physical(int, unsigned int, unsigned int);
 void close_physical(int);
 int unmap_physical(void*, unsigned int);
-/* globals */
-#define BUF_SIZE 80000  // about 10 seconds of left_buffer (@ 8K samples/sec)
-#define BUF_THRESHOLD 96 // 75% of 128 word left_buffer
-#define LW_BRIDGE_SPAN 0x00005000
-#define LW_BRIDGE_BASE 0xFF200000
-#define SDRAM_SPAN 0x03FFFFFFF
-#define DMA_M2S 0x00003080		// same to QSYS
-#define DMA_S2M	0x00003060		// too
 void check_KEYs(int *, int *,int *, int *, int * );
+
 int main(void) 
 {
-    /* Declare volatile pointers to I/O registers (volatile means that IO load
-       and store instructions will be used to access these pointer locations,
-       instead of regular memory loads and stores) */
-	volatile int* red_LED_ptr;
-	volatile int* audio_ptr;
+    volatile int* red_LED_ptr;
+    volatile int* audio_ptr;
     volatile int* SDRAM_ptr;
     volatile int* HEX3_HEX0_ptr;
     volatile int* HEX5_HEX4_ptr;
 
-	volatile int* sdram2module_ptr;
+    volatile int* sdram2module_ptr;
 	volatile int* sdram2module_status_ptr;
 	volatile int* sdram2module_readaddr_ptr;
 	volatile int* sdram2module_writeaddr_ptr;
@@ -43,16 +41,14 @@ int main(void)
 	volatile int* module2sdram_leng_ptr;
 	volatile int* module2sdram_control_ptr;
 	volatile int* SDRAM_result_ptr;
-	volatile int* SW_ptr;
+    volatile int* SW_ptr;
 
 	int fd = -1, i;
     FILE* sp;
 	void* LW_virtual;
     void* SDRAM_virtual;
 	long double duration;
- ////////////////////////////////////////////////////////
 
-    /* used for audio record/playback */
     int fifospace;
 	int record = 0, play = 0, buffer_index = 0;
 	int sdram = 0, result = 0;
@@ -63,7 +59,6 @@ int main(void)
     int software_origin [BUF_SIZE];
 	unsigned short data_buffer[2 * BUF_SIZE];
 
-    /* read and echo audio data */
     record = 0;
     play   = 0;
     sdram = 0;
@@ -97,7 +92,7 @@ int main(void)
 	module2sdram_leng_ptr = module2sdram_ptr + 3;
 	module2sdram_control_ptr = module2sdram_ptr + 6;
 
-	printf("READY\n");
+    printf("READY\n");
     while (1) 
     {
         check_KEYs(&record, &play,&sdram, &result, &buffer_index);
@@ -108,7 +103,7 @@ int main(void)
             *(HEX3_HEX0_ptr) = 0x393F315E;
             *(HEX5_HEX4_ptr) = 0x3179;
 
-            *(red_LED_ptr) = 0x1; // turn on LEDR[0]
+            *(red_LED_ptr) = 0x1;
 			fifospace = *(audio_ptr + 1);
             if ((fifospace & 0x000000FF) > BUF_THRESHOLD) 
             {
@@ -121,11 +116,11 @@ int main(void)
                     {
                         *(HEX3_HEX0_ptr) = 0x0;
                         *(HEX5_HEX4_ptr) = 0x0;
-                        *(red_LED_ptr) = 0x0; // turn off LEDR
+                        *(red_LED_ptr) = 0x0;
                         printf("Recording Complete\n");
 						record = 0;
                     }
-					fifospace = *(audio_ptr + 1); // read the audio port fifospace register
+					fifospace = *(audio_ptr + 1);
                 }
             }
         } 
@@ -133,9 +128,9 @@ int main(void)
         {
             *(HEX3_HEX0_ptr) = 0x0;
             *(HEX5_HEX4_ptr) = 0x0;
-			*(HEX3_HEX0_ptr) = 0x7338776E; //P 01110011 73 L 00111000 38 A 01110111 77 Y 01101110 6E
-            *(red_LED_ptr) = 0x2; // turn on LEDR_1
-            fifospace = *(audio_ptr + 1); // read the audio port fifospace register
+			*(HEX3_HEX0_ptr) = 0x7338776E;
+            *(red_LED_ptr) = 0x2;
+            fifospace = *(audio_ptr + 1);
             if ((fifospace & 0x00FF0000) > BUF_THRESHOLD) 
             {
                 while ((fifospace & 0x00FF0000) && (buffer_index < BUF_SIZE)) 
@@ -143,13 +138,12 @@ int main(void)
                     *(audio_ptr + 2) = left_buffer[buffer_index];
                     *(audio_ptr + 3) = right_buffer[buffer_index];
                     ++buffer_index;
-
                     if (buffer_index == BUF_SIZE) 
                     {
                         play = 0;
                         *(HEX3_HEX0_ptr) = 0x0;
                         *(HEX5_HEX4_ptr) = 0x0;
-                        *(red_LED_ptr) = 0x0; // turn off LEDR
+                        *(red_LED_ptr) = 0x0;
                         printf("Playing Complete\n");
                     }
                     fifospace = *(audio_ptr + 1);
@@ -169,37 +163,32 @@ int main(void)
                 {
 					*(HEX3_HEX0_ptr) = 0x0;
 					*(HEX5_HEX4_ptr) = 0x0;
-					*(red_LED_ptr) = 0x0; // turn off LEDR
+					*(red_LED_ptr) = 0x0; 
 					printf("Transfering Complete\n");
 					printf("Module to SDRAM Complete\n");
-					 // DMA READ (SDRAM -> Compression)					        	//clear the status register
 					printf("Clear Status Register\n");
-					*(module2sdram_status_ptr) =*(module2sdram_status_ptr) & 0xFFFFFFFE;	
-					*(sdram2module_status_ptr) = *(sdram2module_status_ptr) & 0xFFFFFFFE;				//clear
+					*(module2sdram_status_ptr) =*(module2sdram_status_ptr) & 0xFFFFFFFE;
+					*(sdram2module_status_ptr) = *(sdram2module_status_ptr) & 0xFFFFFFFE;
 
                     printf("Clear Status Register\n");
                     printf("SDRAM to Module Status : %X \n", *(sdram2module_status_ptr));
                     printf("Module to SDRAM Status : %X \n", *(module2sdram_status_ptr));
-                    *(sdram2module_readaddr_ptr) = 0x00000000;			//sdram address
-                    *(module2sdram_readaddr_ptr) = 0x00000000;			//fifo buffer address
-                    *(sdram2module_writeaddr_ptr) = 0x00000000;      	//fifo address
-                    *(module2sdram_writeaddr_ptr) = 0x02000000;		//sdram address
+                    *(sdram2module_readaddr_ptr) = 0x00000000;
+                    *(module2sdram_readaddr_ptr) = 0x00000000;
+                    *(sdram2module_writeaddr_ptr) = 0x00000000;
+                    *(module2sdram_writeaddr_ptr) = 0x02000000;
 					 
-                    *(sdram2module_leng_ptr) = 320000;					//size of data
+                    *(sdram2module_leng_ptr) = 320000;
                     *(module2sdram_leng_ptr) = 320000;
                     *(sdram2module_control_ptr) = 0x28C;
                     *(module2sdram_control_ptr) = 0x18C;
-                    printf("SDRAM to Module Start\n");					//control register
-																// wait when read complete t1
-																// time end 1 t2
-                    start=clock();											// processing
+                    printf("SDRAM to Module Start\n");
+                    start=clock();
                     while ((*(sdram2module_status_ptr) & 0x1) != 0x1);			
-                     
                     printf("SDRAM to Module Complete\n");
                     printf("Module to SDRAM Start\n");
-                    while ((*(module2sdram_status_ptr) & 0x1) != 0x1);			// wait when write complete 
+                    while ((*(module2sdram_status_ptr) & 0x1) != 0x1);
 					end=clock();
-                    
 					printf("Module to SDRAM Complete\n");
                     printf("**********************\n");
 					duration = (long double)(end-start)/(CLOCKS_PER_SEC);
@@ -283,7 +272,7 @@ int main(void)
 
 int open_physical(int fd)
 {
-    if (fd == -1) // check if already open
+    if (fd == -1)
 	if((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
     {
         printf("ERROR: could not open \"/dev/mem\"...\n");
@@ -332,27 +321,20 @@ void check_KEYs(int * KEY0, int * KEY1, int * KEY2,int * KEY3, int * counter)
 	KEY_ptr = (unsigned int*)(LW_KEY_virtual + KEY_BASE);
 	audio_ptr = (unsigned int*)(LW_KEY_virtual + AUDIO_BASE);
 	
-    KEY_value = *(KEY_ptr); // read the pushbutton KEY values
+    KEY_value = *(KEY_ptr);
     while (*KEY_ptr);
-         // wait for pushbutton KEY release
-    if (KEY_value == 0x1) // check KEY0
+    if (KEY_value == 0x1) 
     {
-        // reset counter to start recording
         *counter = 0;
-        // clear audio-in FIFO
         *(audio_ptr) = 0x4;
         *(audio_ptr) = 0x0;
-
         *KEY0 = 1;
     }
-    else if (KEY_value == 0x2) // check KEY1
+    else if (KEY_value == 0x2)
     {
-        // reset counter to start playback
         *counter = 0;
-        // clear audio-out FIFO
         *(audio_ptr) = 0x8;
         *(audio_ptr) = 0x0;
-
         *KEY1 = 1;
     } 
     else if(KEY_value == 0x4)
