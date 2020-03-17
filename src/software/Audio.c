@@ -27,70 +27,70 @@ int main(void)
     volatile int* HEX5_HEX4_ptr;
 
     volatile int* sdram2module_ptr;
-	volatile int* sdram2module_status_ptr;
-	volatile int* sdram2module_readaddr_ptr;
-	volatile int* sdram2module_writeaddr_ptr;
-	volatile int* sdram2module_leng_ptr;
-	volatile int* sdram2module_control_ptr;
-	time_t start,end;
-
-	volatile int* module2sdram_ptr;
-	volatile int* module2sdram_status_ptr;
-	volatile int* module2sdram_writeaddr_ptr;
-	volatile int* module2sdram_readaddr_ptr;
-	volatile int* module2sdram_leng_ptr;
-	volatile int* module2sdram_control_ptr;
-	volatile int* SDRAM_result_ptr;
+    volatile int* sdram2module_status_ptr;
+    volatile int* sdram2module_readaddr_ptr;
+    volatile int* sdram2module_writeaddr_ptr;
+    volatile int* sdram2module_leng_ptr;
+    volatile int* sdram2module_control_ptr;
+    time_t start,end;
+    
+    volatile int* module2sdram_ptr;
+    volatile int* module2sdram_status_ptr;
+    volatile int* module2sdram_writeaddr_ptr;
+    volatile int* module2sdram_readaddr_ptr;
+    volatile int* module2sdram_leng_ptr;
+    volatile int* module2sdram_control_ptr;
+    volatile int* SDRAM_result_ptr;
     volatile int* SW_ptr;
 
-	int fd = -1, i;
+    int fd = -1, i;
     FILE* sp;
-	void* LW_virtual;
+    void* LW_virtual;
     void* SDRAM_virtual;
-	long double duration;
+    long double duration;
 
     int fifospace;
-	int record = 0, play = 0, buffer_index = 0;
-	int sdram = 0, result = 0;
+    int record = 0, play = 0, buffer_index = 0;
+    int sdram = 0, result = 0;
     int left_buffer[BUF_SIZE];
     int right_buffer[BUF_SIZE];
     int software_case[BUF_SIZE];
     int software_compression = 0;
     int software_origin [BUF_SIZE];
-	unsigned short data_buffer[2 * BUF_SIZE];
+    unsigned short data_buffer[2 * BUF_SIZE];
 
     record = 0;
     play   = 0;
     sdram = 0;
 
-	if ((fd = open_physical(fd)) == -1)
-		return (-1);
-	if ((LW_virtual = map_physical(fd, LW_BRIDGE_BASE, LW_BRIDGE_SPAN)) == NULL)
-		return (-1);
-    if ((SDRAM_virtual = map_physical (fd, SDRAM_BASE, SDRAM_SPAN)) == NULL)
+    if((fd = open_physical(fd)) == -1)
+        return (-1);
+    if((LW_virtual = map_physical(fd, LW_BRIDGE_BASE, LW_BRIDGE_SPAN)) == NULL)
+        return (-1);
+    if((SDRAM_virtual = map_physical (fd, SDRAM_BASE, SDRAM_SPAN)) == NULL)
         return (-1);
 
-	red_LED_ptr = (unsigned int*)(LW_virtual + LED_BASE);
-	audio_ptr = (unsigned int*)(LW_virtual + AUDIO_BASE);
+    red_LED_ptr = (unsigned int*)(LW_virtual + LED_BASE);
+    audio_ptr = (unsigned int*)(LW_virtual + AUDIO_BASE);
     HEX3_HEX0_ptr = (unsigned int*)(LW_virtual + HEX3_HEX0_BASE);
     HEX5_HEX4_ptr = (unsigned int*)(LW_virtual + HEX5_HEX4_BASE);
-	SW_ptr = (unsigned int*)(LW_virtual + SW_BASE);
-	SDRAM_ptr = (unsigned int*)(SDRAM_virtual);
-	SDRAM_result_ptr = (unsigned int*)(SDRAM_virtual + 0x02000000);	//separated SDRAM for result
+    SW_ptr = (unsigned int*)(LW_virtual + SW_BASE);
+    SDRAM_ptr = (unsigned int*)(SDRAM_virtual);
+    SDRAM_result_ptr = (unsigned int*)(SDRAM_virtual + 0x02000000);	//separated SDRAM for result
 
-	sdram2module_ptr = (unsigned int*)(LW_virtual + DMA_S2M);
-	sdram2module_status_ptr = sdram2module_ptr;
-	sdram2module_readaddr_ptr = sdram2module_ptr + 1;
-	sdram2module_writeaddr_ptr = sdram2module_ptr +2;
-	sdram2module_leng_ptr = sdram2module_ptr + 3;
-	sdram2module_control_ptr = sdram2module_ptr + 6;
+    sdram2module_ptr = (unsigned int*)(LW_virtual + DMA_S2M);
+    sdram2module_status_ptr = sdram2module_ptr;
+    sdram2module_readaddr_ptr = sdram2module_ptr + 1;
+    sdram2module_writeaddr_ptr = sdram2module_ptr +2;
+    sdram2module_leng_ptr = sdram2module_ptr + 3;
+    sdram2module_control_ptr = sdram2module_ptr + 6;
 
-	module2sdram_ptr = (unsigned int*)(LW_virtual + DMA_M2S);
-	module2sdram_status_ptr = module2sdram_ptr;
-	module2sdram_readaddr_ptr = module2sdram_ptr + 1;
-	module2sdram_writeaddr_ptr = module2sdram_ptr + 2;
-	module2sdram_leng_ptr = module2sdram_ptr + 3;
-	module2sdram_control_ptr = module2sdram_ptr + 6;
+    module2sdram_ptr = (unsigned int*)(LW_virtual + DMA_M2S);
+    module2sdram_status_ptr = module2sdram_ptr;
+    module2sdram_readaddr_ptr = module2sdram_ptr + 1;
+    module2sdram_writeaddr_ptr = module2sdram_ptr + 2;
+    module2sdram_leng_ptr = module2sdram_ptr + 3;
+    module2sdram_control_ptr = module2sdram_ptr + 6;
 
     printf("READY\n");
     while (1) 
@@ -102,9 +102,8 @@ int main(void)
             *(HEX5_HEX4_ptr) = 0x0;
             *(HEX3_HEX0_ptr) = 0x393F315E;
             *(HEX5_HEX4_ptr) = 0x3179;
-
             *(red_LED_ptr) = 0x1;
-			fifospace = *(audio_ptr + 1);
+            fifospace = *(audio_ptr + 1);
             if ((fifospace & 0x000000FF) > BUF_THRESHOLD) 
             {
                 while ((fifospace & 0x000000FF) && (buffer_index < BUF_SIZE))  
@@ -118,9 +117,9 @@ int main(void)
                         *(HEX5_HEX4_ptr) = 0x0;
                         *(red_LED_ptr) = 0x0;
                         printf("Recording Complete\n");
-						record = 0;
+                        record = 0;
                     }
-					fifospace = *(audio_ptr + 1);
+                    fifospace = *(audio_ptr + 1);
                 }
             }
         } 
@@ -128,7 +127,7 @@ int main(void)
         {
             *(HEX3_HEX0_ptr) = 0x0;
             *(HEX5_HEX4_ptr) = 0x0;
-			*(HEX3_HEX0_ptr) = 0x7338776E;
+            *(HEX3_HEX0_ptr) = 0x7338776E;
             *(red_LED_ptr) = 0x2;
             fifospace = *(audio_ptr + 1);
             if ((fifospace & 0x00FF0000) > BUF_THRESHOLD) 
@@ -155,21 +154,20 @@ int main(void)
             printf("*******************\n");
             printf(" SDRAM state \n");
             printf("*******************\n");
-			while ((buffer_index < BUF_SIZE)) 
+            while ((buffer_index < BUF_SIZE)) 
             {
                 *(SDRAM_ptr + buffer_index) =  left_buffer[buffer_index];
-				++buffer_index;
-				if (buffer_index == BUF_SIZE) 
+                ++buffer_index;
+                if(buffer_index == BUF_SIZE) 
                 {
-					*(HEX3_HEX0_ptr) = 0x0;
-					*(HEX5_HEX4_ptr) = 0x0;
-					*(red_LED_ptr) = 0x0; 
-					printf("Transfering Complete\n");
-					printf("Module to SDRAM Complete\n");
-					printf("Clear Status Register\n");
-					*(module2sdram_status_ptr) =*(module2sdram_status_ptr) & 0xFFFFFFFE;
-					*(sdram2module_status_ptr) = *(sdram2module_status_ptr) & 0xFFFFFFFE;
-
+                    *(HEX3_HEX0_ptr) = 0x0;
+                    *(HEX5_HEX4_ptr) = 0x0;
+                    *(red_LED_ptr) = 0x0; 
+                    printf("Transfering Complete\n");
+                    printf("Module to SDRAM Complete\n");
+                    printf("Clear Status Register\n");
+                    *(module2sdram_status_ptr) =*(module2sdram_status_ptr) & 0xFFFFFFFE;
+                    *(sdram2module_status_ptr) = *(sdram2module_status_ptr) & 0xFFFFFFFE;
                     printf("Clear Status Register\n");
                     printf("SDRAM to Module Status : %X \n", *(sdram2module_status_ptr));
                     printf("Module to SDRAM Status : %X \n", *(module2sdram_status_ptr));
@@ -188,17 +186,17 @@ int main(void)
                     printf("SDRAM to Module Complete\n");
                     printf("Module to SDRAM Start\n");
                     while ((*(module2sdram_status_ptr) & 0x1) != 0x1);
-					end=clock();
-					printf("Module to SDRAM Complete\n");
+                    end=clock();
+                    printf("Module to SDRAM Complete\n");
                     printf("**********************\n");
-					duration = (long double)(end-start)/(CLOCKS_PER_SEC);
-					printf("Time Elapsed by Hardware : %0f ms \n", duration*1000);	
+                    duration = (long double)(end-start)/(CLOCKS_PER_SEC);
+                    printf("Time Elapsed by Hardware : %0f ms \n", duration*1000);	
                     printf("**********************\n");
                     printf("SDRAM to Module Status : %d \n", *(sdram2module_status_ptr));
                     printf("Module to SDRAM Status : %d \n", *(module2sdram_status_ptr));
                     sdram = 0;
-				}
-			}
+                }
+            }
         }
         else if (result) 
         {
@@ -273,7 +271,7 @@ int main(void)
 int open_physical(int fd)
 {
     if (fd == -1)
-	if((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
+    if((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
     {
         printf("ERROR: could not open \"/dev/mem\"...\n");
         return (-1);
@@ -311,15 +309,13 @@ void check_KEYs(int * KEY0, int * KEY1, int * KEY2,int * KEY3, int * counter)
     volatile int * audio_ptr;
     int KEY_value;
 	int fd = -1;
-	void* LW_KEY_virtual;
-
+    void* LW_KEY_virtual;
     if ((fd = open_physical(fd)) == -1)
         return (-1);
-	if ((LW_KEY_virtual = map_physical(fd, LW_BRIDGE_BASE, LW_BRIDGE_SPAN)) == NULL)
-		return (-1);
-
-	KEY_ptr = (unsigned int*)(LW_KEY_virtual + KEY_BASE);
-	audio_ptr = (unsigned int*)(LW_KEY_virtual + AUDIO_BASE);
+    if ((LW_KEY_virtual = map_physical(fd, LW_BRIDGE_BASE, LW_BRIDGE_SPAN)) == NULL)
+        return (-1);
+    KEY_ptr = (unsigned int*)(LW_KEY_virtual + KEY_BASE);
+    audio_ptr = (unsigned int*)(LW_KEY_virtual + AUDIO_BASE);
 	
     KEY_value = *(KEY_ptr);
     while (*KEY_ptr);
@@ -341,12 +337,12 @@ void check_KEYs(int * KEY0, int * KEY1, int * KEY2,int * KEY3, int * counter)
     {
         *counter = 0;
         *KEY2 = 1;
-	}
-	else if (KEY_value == 0x8) 
-    {
-		*counter = 0;
-		*KEY3 = 1;
     }
-	unmap_physical(LW_KEY_virtual, LW_BRIDGE_SPAN);
-	close_physical(fd);
+    else if (KEY_value == 0x8) 
+    {
+        *counter = 0;
+        *KEY3 = 1;
+    }
+    unmap_physical(LW_KEY_virtual, LW_BRIDGE_SPAN);
+    close_physical(fd);
 }
