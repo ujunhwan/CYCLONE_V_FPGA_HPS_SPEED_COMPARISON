@@ -1,3 +1,5 @@
+paper link https://www.dbpia.co.kr/Society/articleDetail/NODE10448421
+
 # Comparision of Audio Compression Process Rate between FPGA and HPS
 This project compares the speed differences when audio raw datas compressed between FPGAs and HPS.
 ## Structural features
